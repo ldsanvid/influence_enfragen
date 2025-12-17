@@ -11,11 +11,11 @@
       --card: rgba(0,0,0,.02);
       --border: rgba(0,0,0,.16);
       --text: #111;
-      --muted: #330e46;
+      --muted: #B8C8D099;
       --brand: #fde584;
       --brand-2:#f7d85d;
-      --success:#820de9;
-      --danger:#ff6b6b;
+      --success:#405A68;
+      --danger:#f05A2F;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -25,7 +25,7 @@
     }
     header{
       position:fixed; inset:0 0 auto 0; height:64px; z-index:1000; display:flex; align-items:center; gap:20px;
-      padding:0 20px; backdrop-filter:saturate(140%) blur(10px); background:#820de9b1; border-bottom:1px solid var(--border);
+      padding:0 20px; backdrop-filter:saturate(140%) blur(10px); background:var(--success); border-bottom:1px solid var(--border);
     }
     .brand{display:flex; align-items:center; gap:12px; font-weight:700; letter-spacing:.3px}
     .brand .dot{width:10px; height:10px; border-radius:50%; background:var(--muted)}
@@ -48,7 +48,7 @@
     }
     @media(min-width:600px){ select, input[type="text"], input[type="email"]{width:500px; min-width:500px} }
     button{cursor:pointer; font-weight:700}
-    .btn-primary{background:linear-gradient(180deg,var(--brand-2)); color:#000}
+    .btn-primary{background:linear-gradient(180deg,var(--danger)); color:#000}
     .btn-primary:hover{filter:brightness(1.05)}
 
     .summary{white-space:pre-line; text-align:justify}
@@ -176,7 +176,7 @@
     <div class="brand" style="color:var(--bg); display:flex; align-items:center; gap:14px;">
       <img src="static/logo.png" alt="Adelante con Fajardo" 
            style="height:42px; width:auto; object-fit:contain; margin-right:4px;">
-      <span>Monitoreo<span style="color:var(--brand-2)">+</span></span>
+      <span>Monitoreo<span style="color:var(--danger)">+</span></span>
     </div>
     <div class="hamburger" id="hamburger">
       <div></div><div></div><div></div>
@@ -214,7 +214,7 @@
     <section id="preguntas" class="card row" style="margin-top:18px">
       <h2>💬 Chatbot de noticias</h2>
       <div class="controls">
-        <input id="inputPregunta" type="text" placeholder="Ej. ¿Qué noticias hubo sobre Sergio Fajardo el 8 de diciembre?"/> 
+        <input id="inputPregunta" type="text" placeholder="Ej. ¿Qué noticias hubo sobre Gas Natural el 3 de diciembre?"/> 
         <button id="btnPreguntar" class="btn-primary">Consultar</button>
       </div>
       <div id="respuestaTexto" class="summary"></div>
@@ -230,23 +230,24 @@
   <!-- Dashboard Noticias -->
   <div id="dashboard_noticias" style="margin-top:10px">
     <h2>📈 Dashboard de noticias</h2>
-    <div class='tableauPlaceholder' id='viz1765309634149' style='position: relative'>
+    <div class='tableauPlaceholder' id='viz1765995619749' style='position: relative'>
       <noscript>
         <a href='#'>
           <img alt=' '
-               src='https://public.tableau.com/static/images/SF/SF_17652944168240/Recuentodenoticiasporpersonajetrmino/1_rss.png'
-               style='border: none' />
+              src='https://public.tableau.com/static/images/in/influence_enfragen/Recuentodenoticiasporpersonajetrmino/1_rss.png'
+              style='border: none' />
         </a>
       </noscript>
+
       <object class='tableauViz' style='display:none;'>
         <param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' />
         <param name='embed_code_version' value='3' />
         <param name='site_root' value='' />
-        <param name='name' value='SF_17652944168240&#47;Recuentodenoticiasporpersonajetrmino' />
+        <param name='name' value='influence_enfragen/Recuentodenoticiasporpersonajetrmino' />
         <param name='tabs' value='yes' />
         <param name='toolbar' value='yes' />
         <param name='static_image'
-               value='https://public.tableau.com/static/images/SF/SF_17652944168240/Recuentodenoticiasporpersonajetrmino/1.png' />
+              value='https://public.tableau.com/static/images/in/influence_enfragen/Recuentodenoticiasporpersonajetrmino/1.png' />
         <param name='animate_transition' value='yes' />
         <param name='display_static_image' value='yes' />
         <param name='display_spinner' value='yes' />
@@ -255,8 +256,9 @@
         <param name='language' value='es-ES' />
       </object>
     </div>
+
     <script type='text/javascript'>
-      var divElement = document.getElementById('viz1765309634149');
+      var divElement = document.getElementById('viz1765995619749');
       var vizElement = divElement.getElementsByTagName('object')[0];
       if (divElement.offsetWidth > 800) {
         vizElement.style.width='100%';
@@ -283,7 +285,7 @@
     const titularesDiv = document.getElementById('titulares');
     const titularesPreguntaDiv = document.getElementById('titularesPregunta');
 
-    const API_BASE = "https://sf-monitoreo.onrender.com";
+    const API_BASE = "https://influence-enfragen.onrender.com";
 
     async function cargarFechas(){
       try {

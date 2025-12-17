@@ -2277,6 +2277,17 @@ def enviar_email():
     msg["To"] = destinatario
     msg["Subject"] = f"Resumen de noticias {fecha_str}"
 
+    # 📎 Adjuntar logo inline (CID)
+    logo_path = os.path.join("static", "Logo_EMAIL.png")
+    if os.path.exists(logo_path):
+        with open(logo_path, "rb") as f:
+            logo = MIMEImage(f.read())
+        logo.add_header("Content-ID", "<logo_enfragen>")
+        logo.add_header("Content-Disposition", "inline", filename="Logo_EMAIL.png")
+        msg.attach(logo)
+
+
+
     # 🧱 Titulares en tabla: máximo 4 por fila (compatible con Gmail/Outlook)
     titulares_cards = []
     for t in titulares_info:
@@ -2324,7 +2335,10 @@ def enviar_email():
         <td style="background:#fff; padding:16px 20px; border-bottom:2px solid #e5e7eb;">
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
             <tr>
-                <td align="right" style="font-weight:700; font-size:1.2rem; color:#111;">
+                <td align="left" style="padding:0; vertical-align:middle;">
+                    <img src="cid:logo_enfragen" alt="EnfraGen" style="height:44px; width:auto; display:block;" />
+                </td>
+                <td align="right" style="font-weight:700; font-size:1.2rem; color:#111; vertical-align:middle;">
                     Monitoreo<span style="color:#FFB429;">+</span>
                 </td>
             </tr>
