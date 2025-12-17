@@ -1,5 +1,7 @@
 services:
   - type: web
-    name: backend
-    env: docker
+    name: enfregen-backend
+    env: python
     plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn backend_final_enf:app
