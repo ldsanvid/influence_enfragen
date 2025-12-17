@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv/
+venv/
+env/
+
+# Datos y outputs
+*.csv
+*.faiss
+*.pkl
+nubes/
+resumenes/
+faiss_index/
+reporte_semanal/
+
+# Credenciales
+*.key
+*.pem
+
+# OS
+.DS_Store
+Thumbs.db
+
