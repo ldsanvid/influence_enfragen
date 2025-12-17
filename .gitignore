@@ -9,7 +9,7 @@ venv/
 env/
 
 # Datos y outputs
-*.csv
+*.xlsx
 *.faiss
 *.pkl
 nubes/
