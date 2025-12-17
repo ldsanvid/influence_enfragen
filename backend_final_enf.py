@@ -768,9 +768,9 @@ import random
 
 def color_func(word, font_size, position, orientation, random_state=None, **kwargs):
     colores = [
-        "rgb(255, 205, 0)",  # amarillo
-        "rgb(0, 48, 135)",   # azul
-        "rgb(200, 16, 46)"   # rojo
+        "rgb(64, 90, 104)",  # gris
+        "rgb(0, 179, 115)",   # verde
+        "rgb(240, 90, 47)"   # rojo
     ]
     return random.choice(colores)
 
@@ -976,7 +976,7 @@ ESTRUCTURA OBLIGATORIA (hasta 4 párrafos; saltar si bloque vacío, empieza dici
 - Párrafo 1: INDUSTRIA (tarifas, subsidios, gas, regasificación, energía eléctrica) SOLO si hay titulares en ese bloque.
 - Párrafo 2: ESTADO + ENERGÍA (MinMinas, CREG, Ecopetrol, Air-e, funcionarios) SOLO si hay titulares en ese bloque.
 - Párrafo 3: EMPRESAS DEL SECTOR (Enel, EPM, Afinia, etc.) SOLO si hay titulares en ese bloque.
-- Párrafo 4: SOLO si hay titulares sobre EnfraGen / Termovalle / Termoflores.
+- Párrafo 4: SOLO si hay titulares sobre EnfraGen / Termovalle / Termoflores. Si no hay noticias sobre eso, elimina este párrafo.
 
 BLOQUE INDUSTRIA:
 {ctx_ind}
