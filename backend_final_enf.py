@@ -35,6 +35,17 @@ from langchain_core.output_parsers import StrOutputParser
 import hashlib
 import json
 
+def quitar_markdown_basico(texto: str) -> str:
+    if not texto:
+        return texto
+
+    # Quitar negritas Markdown
+    texto = texto.replace("**", "")
+
+    # Convertir bullets tipo "* " a guiones normales
+    texto = re.sub(r"(?m)^\s*\*\s+", "- ", texto)
+
+    return texto
 
 
 def nombre_mes(fecha):
@@ -1900,6 +1911,9 @@ INSTRUCCIONES (OBLIGATORIAS)
 - Prioriza frecuencia de cobertura y temas (Término). Sentimiento es señal ligera.
 - Tono mixto (diagnóstico + implicaciones), claro y directo.
 - Cita 2–4 titulares por semana (texto del titular).
+- PROHIBIDO usar Markdown: no uses asteriscos, no uses **negritas**, no uses viñetas tipo "*".
+- Responde en texto plano con etiquetas sin formato: "Cobertura y términos:", "Implicaciones:", "Conclusión general:".
+
 
 SEMANA A: {desdeA} a {hastaA}
 Métricas A: total={metA["total"]}, top_terminos={metA["top_terminos"]}, top_fuentes={metA["top_fuentes"]}, sentimiento={metA["sentimiento"]}
@@ -1922,6 +1936,7 @@ Titulares B:
             )
 
             respuesta = resp.choices[0].message.content.strip()
+            respuesta = quitar_markdown_basico(respuesta)
             titulares_usados = metA["titulares"] + metB["titulares"]
 
             return jsonify({
@@ -1971,7 +1986,18 @@ INSTRUCCIONES (OBLIGATORIAS)
 - Tu tarea: COMPARAR MES A vs MES B (no mezclar todo en un solo resumen).
 - Prioriza frecuencia de cobertura y temas (Término). Sentimiento es señal ligera.
 - Tono mixto (diagnóstico + implicaciones), claro y directo.
-- Cita 2–4 titulares por mes (texto del titular).
+- Cita 2–4 titulares por mes (sin listas en Markdown: usa guiones normales "- " si hace falta).
+- PROHIBIDO usar Markdown: no uses asteriscos, no uses **negritas**, no uses viñetas tipo "*".
+- Formato de salida obligatorio (texto plano, sin asteriscos):
+  Comparación de Cobertura Mediática: Mes A vs Mes B
+  Mes A: <nombre mes y año>
+  Cobertura y términos: ...
+  Implicaciones: ...
+  Mes B: <nombre mes y año>
+  Cobertura y términos: ...
+  Implicaciones: ...
+  Conclusión general: ...
+
 
 MES A: {desdeA} a {hastaA}
 Métricas A: total={metA["total"]}, top_terminos={metA["top_terminos"]}, top_fuentes={metA["top_fuentes"]}, sentimiento={metA["sentimiento"]}
@@ -1993,7 +2019,8 @@ Titulares B:
                 temperature=0.2
             )
             respuesta = resp.choices[0].message.content.strip()
-
+            respuesta = resp.choices[0].message.content.strip()
+            respuesta = quitar_markdown_basico(respuesta)
             titulares_usados = metA["titulares"] + metB["titulares"]
 
             return jsonify({
