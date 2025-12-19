@@ -70,7 +70,7 @@
         font-weight: 500;
     }
 
-    .chip small{color:var(--muted)}
+    .chip small:not(.medio){ color: var(--muted); }
     .hidden{display:none}
     .muted{color:var(--muted)}
     .loading {
@@ -321,7 +321,7 @@
       html += list.map(t => `
         <div class="chip">
           🗞️ <a class="titulo" href="${t.enlace}" target="_blank">${t.titulo}</a>
-          <small>• ${t.medio}</small>
+          <small class="medio">• ${t.medio}</small>
         </div>
       `).join('');
       target.innerHTML = html;
@@ -415,7 +415,7 @@
             .map(t => `
               <div class="chip">
                 🗞️ <a class="titulo" href="${t.enlace}" target="_blank">${t.titulo}</a>
-                <small>• ${t.medio}</small>
+                <small class="medio">• ${t.medio}</small>
               </div>
             `)
             .join('');

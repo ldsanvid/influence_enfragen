@@ -47,6 +47,7 @@ def quitar_markdown_basico(texto: str) -> str:
 
     return texto
 
+MAX_TITULARES_SELECCION = 10
 
 def nombre_mes(fecha):
     """Devuelve la fecha con mes en español, ej: 'agosto 2025'"""
@@ -1645,7 +1646,7 @@ def es_pregunta_comparativa(texto):
         "diferencias", "diferente", "qué cambió", "que cambió", "cambió", "cambio", "cambios"
     ])
 
-def metricas_periodo(dfX, max_tit=8):
+def metricas_periodo(dfX, max_tit=5):
     if dfX is None or dfX.empty:
         return {"total": 0, "top_terminos": {}, "top_fuentes": {}, "sentimiento": {}, "titulares": []}
 
@@ -1767,7 +1768,7 @@ def es_pregunta_comparativa(texto):
     t = texto.lower()
     # Señales claras de comparación
     return any(k in t for k in ["compara", "comparar", "vs", "versus", "contra", "diferencias", "diferente", "cambio", "cambió", "cambios"])
-def metricas_periodo(dfX, max_tit=8):
+def metricas_periodo(dfX, max_tit=5):
     """
     Resumen estructurado para comparar periodos sin inventar.
     Prioriza frecuencia; sentimiento es señal ligera.
@@ -1937,7 +1938,7 @@ Titulares B:
 
             respuesta = resp.choices[0].message.content.strip()
             respuesta = quitar_markdown_basico(respuesta)
-            titulares_usados = metA["titulares"] + metB["titulares"]
+            titulares_usados = metA["titulares"] + metB["titulares"][:MAX_TITULARES_SELECCION]
 
             return jsonify({
                 "respuesta": respuesta,
@@ -2021,7 +2022,7 @@ Titulares B:
             respuesta = resp.choices[0].message.content.strip()
             respuesta = resp.choices[0].message.content.strip()
             respuesta = quitar_markdown_basico(respuesta)
-            titulares_usados = metA["titulares"] + metB["titulares"]
+            titulares_usados = metA["titulares"] + metB["titulares"][:MAX_TITULARES_SELECCION]
 
             return jsonify({
                 "respuesta": respuesta,
@@ -2198,8 +2199,9 @@ Titulares B:
                 "enlace": enlace,
             })
 
-        lineas_titulares = lineas_titulares[:6]
-        titulares_usados = titulares_usados[:6]
+        lineas_titulares = lineas_titulares[:MAX_TITULARES_SELECCION]
+        titulares_usados = titulares_usados[:MAX_TITULARES_SELECCION]
+
 
         if lineas_titulares:
             bloque_titulares = "\n".join(lineas_titulares)
