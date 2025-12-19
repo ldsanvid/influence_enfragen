@@ -55,14 +55,21 @@
     .summary{white-space:pre-line; text-align:justify}
     .chips{display:flex; flex-direction:column; gap:10px}
     .chip{display:flex; align-items:center; gap:8px; padding:10px 12px; background:rgba(0,0,0,.05); border:1px solid var(--border); border-radius:12px}
-    .chip a {
-        color: var(--success);
+    .chip a.titulo {
+        color: var(--danger);      /* #f05A2F */
         text-decoration: none;
         font-weight: 600;
     }
-    .chip a:hover {
+
+    .chip a.titulo:hover {
         text-decoration: underline;
     }
+
+    .chip small.medio {
+        color: var(--success2);    /* #00B373 */
+        font-weight: 500;
+    }
+
     .chip small{color:var(--muted)}
     .hidden{display:none}
     .muted{color:var(--muted)}
@@ -313,7 +320,7 @@
       let html = tituloBloque ? `<h3>${tituloBloque}</h3>` : '';
       html += list.map(t => `
         <div class="chip">
-          🗞️ <a href="${t.enlace}" target="_blank">${t.titulo}</a>
+          🗞️ <a class="titulo" href="${t.enlace}" target="_blank">${t.titulo}</a>
           <small>• ${t.medio}</small>
         </div>
       `).join('');
@@ -407,7 +414,7 @@
           titularesPreguntaDiv.innerHTML = titulares
             .map(t => `
               <div class="chip">
-                🗞️ <a href="${t.enlace}" target="_blank">${t.titulo}</a>
+                🗞️ <a class="titulo" href="${t.enlace}" target="_blank">${t.titulo}</a>
                 <small>• ${t.medio}</small>
               </div>
             `)
