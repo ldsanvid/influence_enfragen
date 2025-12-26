@@ -566,6 +566,10 @@ Rezago reportado: 6.1 billones COP:
 - 2.4 billones Opción Tarifaria
 - 2.3 billones subsidios
 - 1.4 billones obligaciones de usuarios oficiales
+
+NUEVOS DESARROLLOS:
+- El 25 de diciembre, la Agencia Nacional de Hidrocarburos formalizó a favor de Ecopetrol la cesión del 50 % de la participación que tenía Shell EP Offshore Venture en los contratos de exploración y producción COL 5, Purple Angel y Fuerte Sur, en el caribe sur. Con esta decisión, Ecopetrol asume control total de los proyectos de exploración y producción de gas en el Caribe colombiano.  
+
 """
 TERM_INDUSTRIA = {
     "tarifas energéticas",
@@ -978,16 +982,17 @@ INSTRUCCIONES (OBLIGATORIAS)
   (b) los titulares listados abajo.
 - Si el contexto de energía quedó desactualizado, NO lo “corrijas” con conocimiento externo.
   Solo puedes reflejar actualizaciones si están en los titulares del día.
-- Escribe en español, tono profesional, claro y analítico (diagnóstico + implicaciones).
+- Escribe en español, tono profesional, claro y sencillo (temas más repetidos del día, con contexto y sin dar implicaiones, solo contar la noticia).
 - NO inventes hechos, cifras, nombres o decisiones. No extrapoles más allá de lo que sugieren los titulares.
 - NO escribas títulos, encabezados ni etiquetas tipo “Párrafo 1”.
 - El resultado final debe ser texto corrido, separado únicamente por saltos de línea entre párrafos.
-- Máximo 400 palabras, pero si los titulares del día no dan para tanto, hazlo corto. 
+- Máximo 180 palabras, pero si los titulares del día son pocos, hazlo corto.
+
 
 ESTRUCTURA OBLIGATORIA (hasta 4 párrafos; saltar si bloque vacío, empieza diciendo "las noticias de {fecha_str} son...)
-- Párrafo 1: INDUSTRIA (tarifas, subsidios, gas, regasificación, energía eléctrica) SOLO si hay titulares en ese bloque.
-- Párrafo 2: ESTADO + ENERGÍA (MinMinas, CREG, Ecopetrol, Air-e, funcionarios) SOLO si hay titulares en ese bloque.
-- Párrafo 3: EMPRESAS DEL SECTOR (Enel, EPM, Afinia, etc.) SOLO si hay titulares en ese bloque.
+- Párrafo 1: INDUSTRIA (tarifas, subsidios, gas, regasificación, energía eléctrica) SOLO si hay titulares en ese bloque. Si no hay noticias sobre eso, elimina este párrafo.
+- Párrafo 2: ESTADO + ENERGÍA (MinMinas, CREG, Ecopetrol, Air-e, funcionarios) SOLO si hay titulares en ese bloque. Si no hay noticias sobre eso, elimina este párrafo.
+- Párrafo 3: EMPRESAS DEL SECTOR (Enel, EPM, Afinia, etc.) SOLO si hay titulares en ese bloque. Si no hay noticias sobre eso, elimina este párrafo.
 - Párrafo 4: SOLO si hay titulares sobre EnfraGen / Termovalle / Termoflores. Si no hay noticias sobre eso, elimina este párrafo.
 
 BLOQUE INDUSTRIA:
