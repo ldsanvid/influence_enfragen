@@ -1,0 +1,44 @@
+name: Correr noticias diario
+
+on:
+  schedule:
+    # IMPORTANTE: GitHub Actions usa UTC.
+    # Ejemplo: 12:05 UTC = 06:00 CDMX (UTC-6) en diciembre.
+    - cron: "5 13 * * *"
+  workflow_dispatch:
+
+jobs:
+  run-notebook:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas requests beautifulsoup4 lxml jupyter
+
+      - name: Execute notebook
+        run: |
+          jupyter nbconvert --to notebook --execute Noticias.ipynb --output Noticias_ejecutado.ipynb
+
+      - name: Commit y push de CSV generado
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Solo commitea si hubo cambios (por ejemplo, nuevo CSV)
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No hay cambios para commitear."
+          else
+            git commit -m "Actualización diaria: CSV noticias"
+            git push
+          fi
