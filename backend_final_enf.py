@@ -569,7 +569,7 @@ Rezago reportado: 6.1 billones COP:
 
 NUEVOS DESARROLLOS:
 - El 25 de diciembre, la Agencia Nacional de Hidrocarburos formalizó a favor de Ecopetrol la cesión del 50 % de la participación que tenía Shell EP Offshore Venture en los contratos de exploración y producción COL 5, Purple Angel y Fuerte Sur, en el caribe sur. Con esta decisión, Ecopetrol asume control total de los proyectos de exploración y producción de gas en el Caribe colombiano.  
-
+- Ecopetrol ofrecerá en venta entre 39 y 68 millones de barriles diarios de gas natural, de enero a mayo de 2026. La Empresa Colombiana de Petróleos (Ecopetrol) anunció que pondrá a disposición del mercado entre 39 y 68 Gigas BTU por día (GBTUD)) de gas natural para los meses entre febrero y mayo de 2026, como parte de su estrategia para contribuir al abastecimiento del energético en el país. La compañía informó que el gas provendrá de los campos Cupiagua, Cupiagua Sur y Pauto Sur, ubicados en el Piedemonte Llanero.
 """
 TERM_INDUSTRIA = {
     "tarifas energéticas",
