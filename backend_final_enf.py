@@ -1003,7 +1003,17 @@ ESTILO
 - Cada párrafo debe comenzar DIRECTAMENTE con el actor o el hecho (ej. “Ecopetrol…”, “Air-e…”).
 - NO expliques consecuencias.
 - NO relaciones hechos entre sí si los titulares no lo hacen explícitamente.
-- NO agregues contexto histórico, político o sectorial salvo el de {CONTEXTO_POLITICO}.
+- SÍ puedes agregar frases cortas de contexto SOLO si ese dato está explícitamente en {CONTEXTO_POLITICO} y sirve para entender el titular o desarrollarlo mejor (desambiguar actor, rol institucional, estado de intervención, naturaleza pública/privada, o marco regulatorio inmediato).
+Está prohibido usar ese contexto para inferir consecuencias, evaluar, o decir por qué importa.
+
+USO PERMITIDO DEL {CONTEXTO_POLITICO} (SIN BARRERAS, PERO CONTROLADO)
+- Puedes insertar micro-contexto (máx. 1 frase por párrafo) tomado de {CONTEXTO_POLITICO} cuando aporte claridad inmediata.
+- Ese micro-contexto debe escribirse como HECHO, no como interpretación.
+- Formato recomendado: una oración corta entre comas o como segunda oración.
+  Ejemplos válidos:
+  “La compañía informó que el gas provendrá de los campos Cupiagua, Cupiagua Sur y Pauto Sur, ubicados en el Piedemonte Llanero”, que es contexto del titular que dice que Ecopetrol ofrecerá en venta entre 39 y 68 millones de barriles diarios de gas natural, de enero a mayo de 2026.
+Ejemplos prohibidos:
+  “Esto refuerza…”, “esto implica…”, “esto es clave…”, “podría provocar…”
 
 
 ESTRUCTURA OBLIGATORIA 
