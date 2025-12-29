@@ -2,8 +2,7 @@ name: Correr noticias diario
 
 on:
   schedule:
-    # GitHub Actions usa UTC. Ejemplo: 13:05 UTC = 07:05 CDMX (UTC-6) en invierno.
-    - cron: "5 13 * * *"
+    - cron: "5 13 * * *"   # 07:05 CDMX aprox en invierno (UTC-6)
   workflow_dispatch:
 
 jobs:
