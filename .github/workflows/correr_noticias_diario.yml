@@ -2,7 +2,7 @@ name: Correr noticias diario
 
 on:
   schedule:
-    - cron: "5 13 * * *"   # 07:05 CDMX aprox en invierno (UTC-6)
+    - cron: "5 13 * * *"
   workflow_dispatch:
 
 jobs:
@@ -22,8 +22,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install jupyter spacy
-          python -m spacy download es_core_news_sm
+          pip install jupyter beautifulsoup4 lxml html5lib
 
       - name: Execute notebook
         run: |

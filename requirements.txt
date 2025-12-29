@@ -19,3 +19,5 @@ langchain-openai
 langchain-community
 langchain-core      
 spacy
+lxml
+html5lib
