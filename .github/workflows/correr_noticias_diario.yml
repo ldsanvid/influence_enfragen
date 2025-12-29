@@ -2,7 +2,7 @@ name: Correr noticias diario
 
 on:
   schedule:
-    - cron: "30 19 * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 permissions:
