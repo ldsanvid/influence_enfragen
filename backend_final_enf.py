@@ -796,7 +796,7 @@ def generar_nube(titulos, archivo_salida):
     texto = " ".join(titulos)
     texto = re.sub(r"[\n\r]", " ", texto)
     stopwords = set([
-        "dice", "tras", "pide", "va", "día", "Colombia", "elección", "elecciones", "contra", "países",
+        "dice", "tras", "pide", "va", "día",
         "van", "ser", "hoy", "año", "años", "nuevo", "nueva", "será",
         "sobre", "entre", "hasta", "donde", "desde", "como", "pero", "también", "porque", "cuando",
         "ya", "con", "sin", "del", "los", "las", "que", "una", "por", "para", "este", "esta", "estos",
@@ -804,7 +804,7 @@ def generar_nube(titulos, archivo_salida):
         "se", "su", "sus", "lo", "al", "el", "en", "y", "a", "de", "un", "es", "si", "quieren", "aún",
         "mantiene", "buscaría", "la", "haciendo", "recurriría", "ante", "meses", "están", "subir",
         "ayer", "prácticamente", "sustancialmente", "busca", "cómo", "qué", "días", "construcción","tariffs",
-        "aranceles","construcción", "así", "no","irá", "está", "sea", "eso"
+        "aranceles","construcción", "así", "no","irá", "está", "sea", "eso", "Ecopetrol"
     ])
     wc = WordCloud(
         width=800,
@@ -976,25 +976,50 @@ def generar_resumen_y_datos(fecha_str):
 
 {CONTEXTO_POLITICO}
 
-INSTRUCCIONES (OBLIGATORIAS)
-- Hoy es {fecha_str}.
-- Está PROHIBIDO usar conocimiento externo. Usa únicamente:
-  (a) el contexto de energía (arriba) y
-  (b) los titulares listados abajo.
-- Si el contexto de energía quedó desactualizado, NO lo “corrijas” con conocimiento externo.
-  Solo puedes reflejar actualizaciones si están en los titulares del día.
-- Escribe en español, tono profesional, claro y sencillo (temas más repetidos del día, con contexto y sin dar implicaiones, solo contar la noticia).
-- NO inventes hechos, cifras, nombres o decisiones. No extrapoles más allá de lo que sugieren los titulares.
-- NO escribas títulos, encabezados ni etiquetas tipo “Párrafo 1”.
-- El resultado final debe ser texto corrido, separado únicamente por saltos de línea entre párrafos.
-- Máximo 180 palabras, pero si los titulares del día son pocos, hazlo corto.
+INSTRUCCIONES OBLIGATORIAS — LÉELAS TODAS ANTES DE ESCRIBIR
+
+ROL
+Eres un redactor técnico que elabora un BRIEF FACTUAL INTERNO.
+NO eres analista, NO eres columnista, NO haces interpretación ni contexto adicional.
+
+REGLAS FUNDAMENTALES (PROHIBICIONES ABSOLUTAS)
+- Está TERMINANTEMENTE PROHIBIDO:
+  - Introducir el texto con frases generales como:
+    “Las noticias del día…”, “Las noticias de {fecha_str}…”, “Este día fue relevante…”
+  - Explicar por qué algo es importante, relevante, significativo o preocupante.
+  - Usar frases como:
+    “lo que implica”, “lo que refuerza”, “lo que podría”, “lo que resalta”, “esto es clave”, “esto podría ser”.
+  - Hacer inferencias, conclusiones, evaluaciones o lecturas políticas.
+  - Agregar contexto que NO esté explícitamente contenido en los titulares o que no esté dentro de {CONTEXTO_POLITICO}.
+
+  QUÉ SÍ PUEDES HACER
+- Limitarte estrictamente a TRANSCRIBIR DE FORMA SINTÉTICA lo que dicen los titulares.
+- Reescribir los hechos en prosa clara y neutra, sin calificarlos.
+- Usar únicamente información que esté explícita en los titulares listados.
+- Usar únicamente contexto que esté dentro de {CONTEXTO_POLITICO}
+
+ESTILO
+- Lenguaje neutro, seco y factual.
+- Cada párrafo debe comenzar DIRECTAMENTE con el actor o el hecho (ej. “Ecopetrol…”, “Air-e…”).
+- NO expliques consecuencias.
+- NO relaciones hechos entre sí si los titulares no lo hacen explícitamente.
+- NO agregues contexto histórico, político o sectorial salvo el de {CONTEXTO_POLITICO}.
 
 
-ESTRUCTURA OBLIGATORIA (hasta 4 párrafos; saltar si bloque vacío, empieza diciendo "las noticias de {fecha_str} son...)
+ESTRUCTURA OBLIGATORIA 
 - Párrafo 1: INDUSTRIA (tarifas, subsidios, gas, regasificación, energía eléctrica) SOLO si hay titulares en ese bloque. Si no hay noticias sobre eso, elimina este párrafo.
 - Párrafo 2: ESTADO + ENERGÍA (MinMinas, CREG, Ecopetrol, Air-e, funcionarios) SOLO si hay titulares en ese bloque. Si no hay noticias sobre eso, elimina este párrafo.
 - Párrafo 3: EMPRESAS DEL SECTOR (Enel, EPM, Afinia, etc.) SOLO si hay titulares en ese bloque. Si no hay noticias sobre eso, elimina este párrafo.
 - Párrafo 4: SOLO si hay titulares sobre EnfraGen / Termovalle / Termoflores. Si no hay noticias sobre eso, elimina este párrafo.
+
+FORMATO
+- Texto corrido.
+- Separar párrafos únicamente con saltos de línea.
+- NO usar títulos, encabezados ni etiquetas.
+- NO usar listas ni viñetas.
+- NO usar Markdown.
+- Extensión: solo lo necesario para cubrir los hechos; si hay pocos titulares, el texto debe ser corto.
+
 
 BLOQUE INDUSTRIA:
 {ctx_ind}
