@@ -2257,12 +2257,6 @@ def telegram_webhook():
     telegram_send_message(chat_id, payload["respuesta"][:3500])
     return "ok", 200
 
-# Auto-configurar webhook en Render
-if TELEGRAM_BOT_TOKEN and TELEGRAM_PUBLIC_URL:
-    set_telegram_webhook()
-
-
-
 #correoooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
 @app.route("/enviar_email", methods=["POST"])
 def enviar_email():
