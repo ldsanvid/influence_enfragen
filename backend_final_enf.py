@@ -2596,6 +2596,10 @@ def reporte_semanal():
 
     return jsonify(resultados)
 
+@app.route("/ping", methods=["GET"])
+def ping():
+    return "pong", 200
+
 @app.route("/reporte/<path:filename>", methods=["GET"])
 def descargar_reporte(filename):
     return send_from_directory("reporte_semanal", filename, as_attachment=False)
