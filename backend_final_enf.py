@@ -2219,43 +2219,74 @@ def set_telegram_webhook():
 
 @app.route("/telegram_webhook", methods=["POST"])
 def telegram_webhook():
-    #if TELEGRAM_WEBHOOK_SECRET:
-    #    secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
-    #   if secret != TELEGRAM_WEBHOOK_SECRET:
-    #      return "forbidden", 403
+    try:
+        update = request.get_json(silent=True) or {}
 
-    update = request.get_json(silent=True) or {}
-    message = update.get("message") or update.get("edited_message")
-    if not message:
+        # Telegram manda muchos tipos de updates, no todos son mensajes
+        message = update.get("message") or update.get("edited_message")
+        if not message:
+            return "ok", 200
+
+        chat = message.get("chat") or {}
+        chat_id = chat.get("id")
+
+        text = message.get("text")
+        if not chat_id or not text:
+            # No es un mensaje de texto → ignorar
+            return "ok", 200
+
+        text = text.strip()
+        if not text:
+            return "ok", 200
+
+        # Comandos básicos
+        if text.lower() in ["/start", "/help"]:
+            telegram_send_message(
+                chat_id,
+                "Hola 👋\n\nPuedes preguntarme cosas como:\n"
+                "- ¿Qué se dijo sobre el sector energético esta semana?\n"
+                "- Compara la primera semana de diciembre vs la segunda\n"
+                "- ¿Qué pasó entre el 1 y 7 de diciembre?"
+            )
+            return "ok", 200
+
+        # Aviso de procesamiento
+        telegram_send_message(chat_id, "⏳ Analizando tu pregunta...")
+
+        # 🔒 Protección total: nunca dejar que esto rompa el webhook
+        try:
+            payload, status = responder_pregunta(text)
+        except Exception as e:
+            print("❌ Error interno en responder_pregunta:", e)
+            telegram_send_message(
+                chat_id,
+                "⚠️ Ocurrió un error procesando tu pregunta. Intenta reformularla."
+            )
+            return "ok", 200
+
+        if status != 200 or not isinstance(payload, dict):
+            telegram_send_message(
+                chat_id,
+                "⚠️ No encontré información clara para tu pregunta."
+            )
+            return "ok", 200
+
+        respuesta = payload.get("respuesta", "")
+        if not respuesta:
+            telegram_send_message(
+                chat_id,
+                "⚠️ No encontré información clara para tu pregunta."
+            )
+            return "ok", 200
+
+        telegram_send_message(chat_id, respuesta[:3500])
         return "ok", 200
 
-    chat = message.get("chat") or {}
-    chat_id = chat.get("id")
-    text = (message.get("text") or "").strip()
-
-    if not chat_id or not text:
+    except Exception as e:
+        # 🔥 Este catch evita el 500 sí o sí
+        print("🔥 Error fatal en /telegram_webhook:", e)
         return "ok", 200
 
-    if text.lower() in ["/start", "/help"]:
-        telegram_send_message(
-            chat_id,
-            "Hola 👋\n\nPuedes preguntarme cosas como:\n"
-            "- ¿Qué se dijo sobre EnfraGen esta semana?\n"
-            "- Compara la primera semana de diciembre vs la segunda\n"
-            "- ¿Qué pasó entre el 1 y 7 de diciembre?"
-        )
-        return "ok", 200
-
-    telegram_send_message(chat_id, "⏳ Analizando tu pregunta...")
-
-    payload, status = responder_pregunta(text)
-
-    if status != 200 or "respuesta" not in payload:
-        telegram_send_message(chat_id, "⚠️ No pude procesar la pregunta.")
-        return "ok", 200
-
-    telegram_send_message(chat_id, payload["respuesta"][:3500])
-    return "ok", 200
 
 #correoooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
 @app.route("/enviar_email", methods=["POST"])
