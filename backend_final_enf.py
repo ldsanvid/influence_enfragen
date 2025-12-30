@@ -2446,7 +2446,7 @@ def enviar_email():
 def escape_html(s: str) -> str:
     return (s or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
-def telegram_send_message(bot_token: str, chat_id: str, text: str):
+def telegram_send_message_token(bot_token: str, chat_id: str, text: str):
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     payload = {
         "chat_id": chat_id,
@@ -2536,7 +2536,7 @@ def enviar_telegram():
     try:
         MAX = 3500
         for i in range(0, len(msg), MAX):
-            telegram_send_message(bot_token, chat_id, msg[i:i+MAX])
+            telegram_send_message_token(bot_token, chat_id, msg[i:i+MAX])
     except Exception as e:
         return jsonify({"mensaje": f"❌ Error enviando mensaje a Telegram: {e}"}), 500
 
