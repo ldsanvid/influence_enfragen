@@ -32,6 +32,8 @@ from langchain_core.output_parsers import StrOutputParser
 import hashlib
 import json
 
+print("✅ CARGÓ backend_final_enf.py — VERSION 2025-12-30 17:xx")
+
 def quitar_markdown_basico(texto: str) -> str:
     if not texto:
         return texto
