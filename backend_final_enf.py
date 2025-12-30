@@ -19,11 +19,8 @@ from email.mime.image import MIMEImage
 from email import encoders
 from email.utils import formataddr
 from dotenv import load_dotenv
-
-
 from babel.dates import format_date
 from s3_utils import s3_download_all as r2_download_all, s3_upload as r2_upload
-import numpy as np
 import faiss
 import requests
 # LangChain / RAG
@@ -1224,12 +1221,7 @@ def extraer_rango_fechas(pregunta):
         if fecha_inicio and fecha_fin:
             return fecha_inicio.date(), fecha_fin.date()
     return None, None
-MESES_ES = {
-    "enero": 1, "febrero": 2, "marzo": 3, "abril": 4,
-    "mayo": 5, "junio": 6, "julio": 7, "agosto": 8,
-    "septiembre": 9, "setiembre": 9,
-    "octubre": 10, "noviembre": 11, "diciembre": 12,
-}
+
 # -----------------------------------------
 # 🆕 Helper para obtener semanas reales del mes (lunes–viernes)
 # -----------------------------------------
@@ -1632,6 +1624,41 @@ def filtrar_docs_por_rango(docs, fecha_inicio, fecha_fin):
         # Si el filtro deja todo vacío, devolvemos la lista original
         # para no quedarnos sin contexto.
         return docs, False
+    
+def construir_vectorstore_desde_df(df_rango: pd.DataFrame):
+    """Crea un mini-vectorstore (LangChain FAISS) con noticias ya filtradas por fecha.
+    Usa las mismas embeddings globales.
+    """
+    docs = []
+    if df_rango is None or df_rango.empty:
+        return None
+
+    for _, row in df_rango.iterrows():
+        titulo = str(row.get("Título", "")).strip()
+        if not titulo:
+            continue
+
+        fecha = row.get("Fecha", "")
+        try:
+            fecha_str = pd.to_datetime(fecha, errors="coerce").date().isoformat()
+        except Exception:
+            fecha_str = str(fecha)[:10] if fecha else ""
+
+        metadata = {
+            "titulo": titulo,
+            "fuente": str(row.get("Fuente", "")).strip(),
+            "enlace": str(row.get("Enlace", "")).strip(),
+            "fecha": fecha_str,
+            "sentimiento": str(row.get("Sentimiento", "")).strip(),
+            "termino": str(row.get("Término", "")).strip(),
+        }
+
+        docs.append(Document(page_content=titulo, metadata=metadata))
+
+    if not docs:
+        return None
+
+    return LCFAISS.from_documents(docs, embeddings)
 
 #pregunta!!!!    
 # ------------------------------
@@ -1678,35 +1705,6 @@ def detectar_comparacion_meses(texto):
     mes1 = MESES_ES.get(m.group(1))
     mes2 = MESES_ES.get(m.group(3))
     return mes1, mes2
-def es_pregunta_comparativa(texto):
-    if not texto:
-        return False
-    t = texto.lower()
-    return any(k in t for k in [
-        "compara", "comparar", "comparación", "vs", "versus", "contra",
-        "diferencias", "diferente", "qué cambió", "que cambió", "cambió", "cambio", "cambios"
-    ])
-
-def metricas_periodo(dfX, max_tit=5):
-    if dfX is None or dfX.empty:
-        return {"total": 0, "top_terminos": {}, "top_fuentes": {}, "sentimiento": {}, "titulares": []}
-
-    top_terminos = dfX["Término"].astype(str).value_counts().head(8).to_dict() if "Término" in dfX.columns else {}
-    top_fuentes  = dfX["Fuente"].astype(str).value_counts().head(8).to_dict() if "Fuente" in dfX.columns else {}
-    sentimiento  = dfX["Sentimiento"].astype(str).value_counts().to_dict() if "Sentimiento" in dfX.columns else {}
-
-    vc = dfX["Título"].astype(str).value_counts()
-    titulares = []
-    for titulo in list(vc.index[:max_tit]):
-        row = dfX[dfX["Título"].astype(str) == titulo].iloc[0]
-        titulares.append({
-            "titulo": row.get("Título", ""),
-            "medio": row.get("Fuente", ""),
-            "enlace": row.get("Enlace", ""),
-            "fecha": row.get("Fecha").strftime("%Y-%m-%d") if pd.notnull(row.get("Fecha")) else ""
-        })
-
-    return {"total": len(dfX), "top_terminos": top_terminos, "top_fuentes": top_fuentes, "sentimiento": sentimiento, "titulares": titulares}
 
 ORDINAL_SEMANA = {
     "primera": 1, "1ra": 1, "1": 1,
@@ -1854,25 +1852,16 @@ def metricas_periodo(dfX, max_tit=5):
         "sentimiento": sentimiento,
         "titulares": titulares
     }
-
-@app.route("/pregunta", methods=["POST"])
-def pregunta():
+def responder_pregunta(q: str):
+    """Lógica central de /pregunta (reusable para frontend y Telegram).
+    Devuelve (payload: dict, status_code: int).
     """
-    Chatbot principal (versión LangChain).
-
-    - Interpreta fechas/rangos y, si existen noticias en ese periodo,
-      construye un mini-vectorstore FAISS SOLO con esas noticias.
-    - Si NO hay noticias en ese rango o no se menciona fecha, usa el
-      vectorstore global con k=40 (más contexto).
-    - Usa retriever_resumenes para contexto macro (resúmenes diarios).
-    """
-    data = request.get_json()
-    q = data.get("pregunta", "").strip()
+    q = (q or "").strip()
     if not q:
-        return jsonify({"error": "No se proporcionó una pregunta válida."}), 400
+        return {"error": "No se proporcionó una pregunta válida."}, 400
 
     try:
-# 🧠 1️⃣ Detectar entidades y rango de fechas
+        # 🧠 1️⃣ Detectar entidades y rango de fechas
         entidades = extraer_entidades(q) if "extraer_entidades" in globals() else {}
 
         # 🆚 1.A) Detectar comparación de meses (septiembre vs diciembre, etc.)
@@ -1905,23 +1894,21 @@ def pregunta():
             # Para que el resto del flujo NO caiga en "sin_fecha"
             fecha_inicio = min(desdeA, desdeB)
             fecha_fin = max(hastaA, hastaB)
-            origen_rango = "comparacion_meses"
-
         else:
-            # Si NO es comparación, usa tu interpretador normal
             fecha_inicio, fecha_fin, origen_rango = interpretar_rango_fechas(q, df)
 
-        print(f"📅 Rango interpretado para la pregunta: {fecha_inicio} → {fecha_fin} ({origen_rango})")
+        print(f"📅 Rango interpretado para la pregunta: {fecha_inicio} → {fecha_fin} ({origen_rango if 'origen_rango' in locals() else 'mes_vs_mes'})")
 
-        # ✅ MODO COMPARACIÓN SEMANAL (solo si hay intención comparativa)
-        fecha_max_ds = df.dropna(subset=["Fecha"])["Fecha"].max()
-        fecha_max_ds = pd.to_datetime(fecha_max_ds, errors="coerce").date()
+        # 🧠 1.B) Detectar comparación semanal (usa la función REAL que sí existe en el archivo)
+        fechas_validas = pd.to_datetime(df["Fecha"], errors="coerce").dropna()
+        fecha_max_dataset = fechas_validas.max().date() if not fechas_validas.empty else datetime.now().date()
 
-        rA, rB, origen_sem = detectar_comparacion_semanas(q, fecha_max_ds)
+        rA, rB, origen_sem = detectar_comparacion_semanas(q, fecha_max_dataset)
 
+        # ✅ Si hay comparación semanal detectada, ejecutamos modo comparación semanal
         if es_pregunta_comparativa(q) and rA and rB:
-            desdeA, hastaA = rA
-            desdeB, hastaB = rB
+            (desdeA, hastaA) = rA
+            (desdeB, hastaB) = rB
 
             df_validas = df.dropna(subset=["Fecha"]).copy()
             df_validas["Fecha_date"] = pd.to_datetime(df_validas["Fecha"], errors="coerce").dt.date
@@ -1935,43 +1922,35 @@ def pregunta():
             dfA = df_validas[(df_validas["Fecha_date"] >= desdeA) & (df_validas["Fecha_date"] <= hastaA)].copy()
             dfB = df_validas[(df_validas["Fecha_date"] >= desdeB) & (df_validas["Fecha_date"] <= hastaB)].copy()
 
-            try:
-                dfA = filtrar_titulares(dfA, entidades, None)
-                dfB = filtrar_titulares(dfB, entidades, None)
-            except Exception:
-                pass
-
             metA = metricas_periodo(dfA, max_tit=8)
             metB = metricas_periodo(dfB, max_tit=8)
 
             prompt_comp = f"""
-{CONTEXTO_POLITICO}
+Compara la cobertura mediática entre dos periodos de tiempo y responde SOLO con la información disponible.
+No inventes hechos externos. Si falta información, dilo.
 
-INSTRUCCIONES (OBLIGATORIAS)
-- Prohibido usar conocimiento externo. Usa SOLO métricas y titulares de abajo.
-- Tu tarea: COMPARAR SEMANA A vs SEMANA B (no mezclar todo en un solo resumen).
-- Prioriza frecuencia de cobertura y temas (Término). Sentimiento es señal ligera.
-- Tono mixto (diagnóstico + implicaciones), claro y directo.
-- Cita 2–4 titulares por semana (texto del titular).
-- PROHIBIDO usar Markdown: no uses asteriscos, no uses **negritas**, no uses viñetas tipo "*".
-- Responde en texto plano con etiquetas sin formato: "Cobertura y términos:", "Implicaciones:", "Conclusión general:".
+Pregunta del usuario:
+{q}
 
+Periodo A ({desdeA} a {hastaA}):
+- Total de noticias: {metA['total']}
+- Top términos: {metA['top_terminos']}
+- Top fuentes: {metA['top_fuentes']}
+- Sentimiento: {metA['sentimiento']}
+- Titulares ejemplo: {[t['titulo'] for t in metA['titulares'][:5]]}
 
-SEMANA A: {desdeA} a {hastaA}
-Métricas A: total={metA["total"]}, top_terminos={metA["top_terminos"]}, top_fuentes={metA["top_fuentes"]}, sentimiento={metA["sentimiento"]}
-Titulares A:
-{json.dumps(metA["titulares"], ensure_ascii=False)}
-
-SEMANA B: {desdeB} a {hastaB}
-Métricas B: total={metB["total"]}, top_terminos={metB["top_terminos"]}, top_fuentes={metB["top_fuentes"]}, sentimiento={metB["sentimiento"]}
-Titulares B:
-{json.dumps(metB["titulares"], ensure_ascii=False)}
+Periodo B ({desdeB} a {hastaB}):
+- Total de noticias: {metB['total']}
+- Top términos: {metB['top_terminos']}
+- Top fuentes: {metB['top_fuentes']}
+- Sentimiento: {metB['sentimiento']}
+- Titulares ejemplo: {[t['titulo'] for t in metB['titulares'][:5]]}
 """
 
             resp = client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
-                    {"role": "system", "content": "Eres un analista del sector energético colombiano y su cobertura mediática. Prohibido usar conocimiento externo."},
+                    {"role": "system", "content": "Eres un analista del sector energético colombiano y de su cobertura mediática. Prohibido usar conocimiento externo."},
                     {"role": "user", "content": prompt_comp}
                 ],
                 temperature=0.2
@@ -1981,7 +1960,7 @@ Titulares B:
             respuesta = quitar_markdown_basico(respuesta)
             titulares_usados = metA["titulares"] + metB["titulares"][:MAX_TITULARES_SELECCION]
 
-            return jsonify({
+            return {
                 "respuesta": respuesta,
                 "titulares_usados": titulares_usados,
                 "filtros": {
@@ -1990,208 +1969,103 @@ Titulares B:
                     "resumenes_usados": [],
                     "origen": origen_sem
                 }
-            })
-
-
-                # ✅ MODO COMPARACIÓN REAL: solo si la pregunta trae intención comparativa y tenemos dos meses
-        if es_pregunta_comparativa(q) and modo_comparacion_meses and rangoA and rangoB:
-            df_validas = df.dropna(subset=["Fecha"]).copy()
-            df_validas["Fecha_date"] = pd.to_datetime(df_validas["Fecha"], errors="coerce").dt.date
-
-            desdeA, hastaA = rangoA
-            desdeB, hastaB = rangoB
-
-            # Recortar a rango real del dataset
-            min_ds = df_validas["Fecha_date"].min()
-            max_ds = df_validas["Fecha_date"].max()
-            desdeA, hastaA = max(desdeA, min_ds), min(hastaA, max_ds)
-            desdeB, hastaB = max(desdeB, min_ds), min(hastaB, max_ds)
-
-            dfA = df_validas[(df_validas["Fecha_date"] >= desdeA) & (df_validas["Fecha_date"] <= hastaA)].copy()
-            dfB = df_validas[(df_validas["Fecha_date"] >= desdeB) & (df_validas["Fecha_date"] <= hastaB)].copy()
-
-            # Reusar tu filtro por entidades/temas (si existe en tu archivo)
-            try:
-                dfA = filtrar_titulares(dfA, entidades, None)
-                dfB = filtrar_titulares(dfB, entidades, None)
-            except Exception:
-                pass
-
-            metA = metricas_periodo(dfA, max_tit=8)
-            metB = metricas_periodo(dfB, max_tit=8)
+            }, 200
 
             prompt_comp = f"""
-{CONTEXTO_POLITICO}
+Compara la cobertura mediática entre dos periodos de tiempo (mes vs mes) y responde SOLO con la información disponible.
+No inventes hechos externos. Si falta información, dilo.
 
-INSTRUCCIONES (OBLIGATORIAS)
-- Prohibido usar conocimiento externo. Usa SOLO métricas y titulares de abajo.
-- Tu tarea: COMPARAR MES A vs MES B (no mezclar todo en un solo resumen).
-- Prioriza frecuencia de cobertura y temas (Término). Sentimiento es señal ligera.
-- Tono mixto (diagnóstico + implicaciones), claro y directo.
-- Cita 2–4 titulares por mes (sin listas en Markdown: usa guiones normales "- " si hace falta).
-- PROHIBIDO usar Markdown: no uses asteriscos, no uses **negritas**, no uses viñetas tipo "*".
-- Formato de salida obligatorio (texto plano, sin asteriscos):
-  Comparación de Cobertura Mediática: Mes A vs Mes B
-  Mes A: <nombre mes y año>
-  Cobertura y términos: ...
-  Implicaciones: ...
-  Mes B: <nombre mes y año>
-  Cobertura y términos: ...
-  Implicaciones: ...
-  Conclusión general: ...
+Pregunta del usuario:
+{q}
 
+MES A ({desdeA} a {hastaA}):
+- Total de noticias: {metA['total']}
+- Top términos: {metA['top_terminos']}
+- Top fuentes: {metA['top_fuentes']}
+- Sentimiento: {metA['sentimiento']}
+- Titulares ejemplo: {[t['titulo'] for t in metA['titulares'][:5]]}
 
-MES A: {desdeA} a {hastaA}
-Métricas A: total={metA["total"]}, top_terminos={metA["top_terminos"]}, top_fuentes={metA["top_fuentes"]}, sentimiento={metA["sentimiento"]}
-Titulares A:
-{json.dumps(metA["titulares"], ensure_ascii=False)}
-
-MES B: {desdeB} a {hastaB}
-Métricas B: total={metB["total"]}, top_terminos={metB["top_terminos"]}, top_fuentes={metB["top_fuentes"]}, sentimiento={metB["sentimiento"]}
-Titulares B:
-{json.dumps(metB["titulares"], ensure_ascii=False)}
+MES B ({desdeB} a {hastaB}):
+- Total de noticias: {metB['total']}
+- Top términos: {metB['top_terminos']}
+- Top fuentes: {metB['top_fuentes']}
+- Sentimiento: {metB['sentimiento']}
+- Titulares ejemplo: {[t['titulo'] for t in metB['titulares'][:5]]}
 """
 
             resp = client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
-                    {"role": "system", "content": "Eres un analista del sector energético colombiano y su cobertura mediática. Prohibido usar conocimiento externo."},
+                    {"role": "system", "content": "Eres un analista del sector energético colombiano y de su cobertura mediática. Prohibido usar conocimiento externo."},
                     {"role": "user", "content": prompt_comp}
                 ],
                 temperature=0.2
             )
-            respuesta = resp.choices[0].message.content.strip()
+
             respuesta = resp.choices[0].message.content.strip()
             respuesta = quitar_markdown_basico(respuesta)
             titulares_usados = metA["titulares"] + metB["titulares"][:MAX_TITULARES_SELECCION]
 
-            return jsonify({
+            return {
                 "respuesta": respuesta,
                 "titulares_usados": titulares_usados,
                 "filtros": {
                     "entidades": entidades,
                     "rango": [str(desdeA), str(hastaA), str(desdeB), str(hastaB)],
-                    "resumenes_usados": []
+                    "resumenes_usados": [],
+                    "origen": "comparacion_meses"
                 }
-            })
-
+            }, 200
 
         tiene_rango = fecha_inicio is not None and fecha_fin is not None
 
         # 🧠 2️⃣ Filtrar DataFrame por rango ANTES de FAISS (solo si hay rango)
         df_rango = pd.DataFrame()
         if tiene_rango:
-            # Asegurarnos de trabajar solo con filas que sí tienen fecha
             df_validas = df.dropna(subset=["Fecha"]).copy()
             df_validas["Fecha_date"] = pd.to_datetime(df_validas["Fecha"], errors="coerce").dt.date
-
             mask = (df_validas["Fecha_date"] >= fecha_inicio) & (df_validas["Fecha_date"] <= fecha_fin)
             df_rango = df_validas[mask].copy()
-
             print(f"🧾 Noticias en rango {fecha_inicio} → {fecha_fin}: {len(df_rango)} filas")
 
         # 🧠 3️⃣ Recuperar resúmenes relevantes (contexto macro)
         resumen_docs = []
         if retriever_resumenes is not None:
             try:
-                # Compatibilidad con distintas versiones de LangChain:
-                if hasattr(retriever_resumenes, "get_relevant_documents"):
-                    resumen_docs = retriever_resumenes.get_relevant_documents(q)
-                else:
-                    resumen_docs = retriever_resumenes.invoke(q)
+                resumen_docs = retriever_resumenes.invoke(q)
             except Exception as e:
                 print(f"⚠️ Error al recuperar resúmenes con LangChain: {e}")
                 resumen_docs = []
         else:
             print("⚠️ retriever_resumenes es None (aún no hay resúmenes indexados).")
 
-        # Filtrar resúmenes por rango (con fallback si deja todo vacío)
-        resumen_docs_filtrados, _ = filtrar_docs_por_rango(resumen_docs, fecha_inicio, fecha_fin)
-
-        bloques_resumen = []
-        dias_resumen_usados = []
-        for d in resumen_docs_filtrados:
-            texto = d.page_content.strip()
-            if len(texto) > 600:
-                texto = texto[:600] + "..."
-            fecha_meta = d.metadata.get("fecha") if d.metadata else None
-            if fecha_meta:
-                dias_resumen_usados.append(fecha_meta)
-                bloques_resumen.append(f"[Resumen {fecha_meta}]\n{texto}")
-            else:
-                bloques_resumen.append(f"[Resumen sin fecha]\n{texto}")
-
-        bloque_resumenes = "\n\n".join(bloques_resumen) if bloques_resumen else "No se encontraron resúmenes relevantes."
+        resumen_docs_filtrados, dias_resumen_usados = filtrar_docs_por_rango(resumen_docs, fecha_inicio, fecha_fin)
 
         # 🧠 4️⃣ Recuperar noticias relevantes (contexto micro)
+        noticias_docs = []
         noticias_docs_filtrados = []
 
-        # 4.A) Si hay rango y SÍ hay noticias en el rango → mini-vectorstore temporal
-        if tiene_rango and not df_rango.empty:
-            print("🧩 Usando mini-vectorstore temporal de noticias dentro del rango solicitado.")
-
-            docs_rango = []
-            for _, row in df_rango.iterrows():
-                titulo = str(row.get("Título", "")).strip()
-                if not titulo:
-                    continue
-
-                fecha_val = row.get("Fecha_date") or row.get("Fecha")
-                if pd.notnull(fecha_val):
-                    try:
-                        fecha_str = pd.to_datetime(fecha_val).strftime("%Y-%m-%d")
-                    except Exception:
-                        fecha_str = None
-                else:
-                    fecha_str = None
-
-                metadata = {
-                    "fecha": fecha_str,
-                    "fuente": row.get("Fuente"),
-                    "enlace": row.get("Enlace"),
-                    "sentimiento": row.get("Sentimiento"),
-                    "termino": row.get("Término"),
-                }
-
-                docs_rango.append(Document(page_content=titulo, metadata=metadata))
-
-            if docs_rango:
-                mini_vs = LCFAISS.from_documents(docs_rango, embeddings)
-                mini_ret = mini_vs.as_retriever(search_kwargs={"k": 40})
-                try:
-                    if hasattr(mini_ret, "get_relevant_documents"):
-                        noticias_docs_filtrados = mini_ret.get_relevant_documents(q)
-                    else:
-                        noticias_docs_filtrados = mini_ret.invoke(q)
-                except Exception as e:
-                    print(f"⚠️ Error al recuperar noticias con mini-vectorstore: {e}")
-                    noticias_docs_filtrados = []
-            else:
-                print("⚠️ No se construyeron documentos para el mini-vectorstore (rango vacío tras limpieza).")
+        if tiene_rango and (df_rango is not None) and (not df_rango.empty):
+            try:
+                vectorstore_rango = construir_vectorstore_desde_df(df_rango)
+                retriever_rango = vectorstore_rango.as_retriever(search_kwargs={"k": 40})
+                noticias_docs = retriever_rango.invoke(q)
+                noticias_docs_filtrados = noticias_docs
+            except Exception as e:
+                print(f"⚠️ Error construyendo mini-vectorstore por rango: {e}")
+                noticias_docs = []
                 noticias_docs_filtrados = []
-
-        # 4.B) Si NO hay rango o NO hay noticias en ese rango → usar vectorstore global (k=40)
-        if (not tiene_rango) or (tiene_rango and df_rango.empty):
-            if tiene_rango and df_rango.empty:
-                print("ℹ️ No hay noticias en el rango pedido; uso vectorstore global como fallback.")
-            else:
-                print("ℹ️ Pregunta sin fechas claras; uso vectorstore global con k=40.")
-
-            noticias_docs = []
-            if 'vectorstore_noticias' in globals() and vectorstore_noticias is not None:
+        else:
+            if vectorstore_noticias is not None:
                 try:
                     retriever_global = vectorstore_noticias.as_retriever(search_kwargs={"k": 40})
-                    if hasattr(retriever_global, "get_relevant_documents"):
-                        noticias_docs = retriever_global.get_relevant_documents(q)
-                    else:
-                        noticias_docs = retriever_global.invoke(q)
+                    noticias_docs = retriever_global.invoke(q)
                 except Exception as e:
                     print(f"⚠️ Error al recuperar noticias con vectorstore global: {e}")
                     noticias_docs = []
             else:
                 print("⚠️ vectorstore_noticias es None (no se construyó índice global de noticias).")
 
-            # En este caso NO filtramos por fecha otra vez: o no hay rango, o el rango estaba vacío
             noticias_docs_filtrados = noticias_docs
 
         # 4.C) Si no hay NADA de contexto (ni resúmenes ni noticias), responde orientando
@@ -2203,7 +2077,7 @@ Titulares B:
                 "- Menciona un país, ciudad o personaje.\n"
                 "- Si quieres un periodo, indica las fechas aproximadas."
             )
-            return jsonify({
+            return {
                 "respuesta": mensaje,
                 "titulares_usados": [],
                 "filtros": {
@@ -2211,7 +2085,7 @@ Titulares B:
                     "rango": [str(fecha_inicio), str(fecha_fin)] if (fecha_inicio and fecha_fin) else None,
                     "resumenes_usados": [],
                 }
-            })
+            }, 200
 
         # 🧾 5️⃣ Construir bloque de titulares + lista para el frontend
         lineas_titulares = []
@@ -2219,60 +2093,48 @@ Titulares B:
         vistos = set()
 
         for d in noticias_docs_filtrados:
-            titulo = d.page_content.strip()
-            meta = d.metadata or {}
-            fuente = (meta.get("fuente") or "Fuente desconocida").strip()
-            enlace = (meta.get("enlace") or "").strip()
-            fecha_meta = meta.get("fecha") or ""
+            md = getattr(d, "metadata", {}) or {}
+            titulo = md.get("titulo") or md.get("Título") or ""
+            medio = md.get("fuente") or md.get("Fuente") or ""
+            enlace = md.get("enlace") or md.get("Enlace") or ""
+            fecha = md.get("fecha") or md.get("Fecha") or ""
 
-            clave = (titulo, fuente, enlace, fecha_meta)
-            if clave in vistos:
+            key = (titulo.strip(), medio.strip())
+            if not titulo or key in vistos:
                 continue
-            vistos.add(clave)
+            vistos.add(key)
 
-            linea = f"- {titulo} ({fuente}, {fecha_meta})".strip()
-            lineas_titulares.append(linea)
+            lineas_titulares.append(f"- {titulo} ({medio}) [{fecha}]")
 
             titulares_usados.append({
                 "titulo": titulo,
-                "medio": fuente,
-                "fecha": fecha_meta,
+                "medio": medio,
                 "enlace": enlace,
+                "fecha": str(fecha)[:10] if fecha else ""
             })
 
-        lineas_titulares = lineas_titulares[:MAX_TITULARES_SELECCION]
-        titulares_usados = titulares_usados[:MAX_TITULARES_SELECCION]
+            if len(titulares_usados) >= MAX_TITULARES_SELECCION:
+                break
 
+        bloque_titulares = "\n".join(lineas_titulares) if lineas_titulares else "No se encontraron titulares específicos, solo contexto general de resúmenes."
 
-        if lineas_titulares:
-            bloque_titulares = "\n".join(lineas_titulares)
-        else:
-            bloque_titulares = "No se encontraron titulares específicos, solo contexto general de resúmenes."
+        # 🧾 6️⃣ Bloque de resúmenes para prompt
+        lineas_resumenes = []
+        for d in resumen_docs_filtrados[:6]:
+            md = getattr(d, "metadata", {}) or {}
+            fecha = md.get("fecha") or md.get("Fecha") or ""
+            texto = getattr(d, "page_content", str(d)).strip()
+            if texto:
+                lineas_resumenes.append(f"[{fecha}] {texto}")
 
-        # 🧠 6️⃣ Construir texto final para la chain de LangChain
+        bloque_resumenes = "\n\n".join(lineas_resumenes) if lineas_resumenes else "(No hay resúmenes relevantes en el periodo.)"
+
         texto_usuario = f"""{CONTEXTO_POLITICO}
 
-Responde en español, con tono mixto: profesional y analítico, pero claro y directo.
+Responde en español, con tono profesional y analítico, claro y directo.
 Usa ÚNICAMENTE la información contenida en los “Resúmenes relevantes” y “Titulares relevantes”.
-Está PROHIBIDO agregar contexto externo, datos “de memoria”, o hechos no presentes en esos bloques.
-Si algo no aparece en titulares/resúmenes, dilo explícitamente (“no está en el dataset del periodo consultado”).
-
-Reglas de citación:
-- Cuando afirmes algo importante, apóyalo citando 1–3 titulares del bloque de “Titulares relevantes”
-  (los titulares ya se devuelven aparte como titulares_usados; aquí basta con referirte a ellos por su texto).
-
-Si hay resúmenes o titulares en inglés, traduce y sintetiza su contenido.
-
-Si el bloque de titulares dice:
-"No se encontraron titulares específicos, solo contexto general de resúmenes."
-entonces responde solo con el contexto general (sin inventar).
-
-
-Si el contexto realmente no contiene ningún titular ni resumen relacionado con la pregunta, indícalo explícitamente y no inventes datos.
-Si sí hay información parcial, responde de todas formas describiendo lo que se puede afirmar a partir de esos titulares, sin exagerar pero tampoco diciendo que no hay información.
-No menciones titulares individuales, es decir, si algún titular menciona una noticia, cuenta la noticia, no el hecho de que hay un titular de algún medio hablando de eso.
-Evita frases como “no se dispone de información específica”; en su lugar, explica directamente lo que sí muestran los titulares.
-A menos que el contexto esté totalmente vacío, contesta con un mínimo de 150 palabras.
+Está PROHIBIDO agregar contexto externo o hechos no presentes en esos bloques.
+Si algo no aparece en titulares/resúmenes, dilo explícitamente.
 
 Pregunta del usuario:
 {q}
@@ -2289,10 +2151,9 @@ Titulares relevantes:
 Respuesta:
 """
 
-        # 🧩 7️⃣ Llamada a LangChain (ChatOpenAI + PromptTemplate)
         texto_respuesta = chain_pregunta.invoke({"texto_usuario": texto_usuario}).strip()
 
-        return jsonify({
+        return {
             "respuesta": texto_respuesta,
             "titulares_usados": titulares_usados,
             "filtros": {
@@ -2300,11 +2161,18 @@ Respuesta:
                 "rango": [str(fecha_inicio), str(fecha_fin)] if (fecha_inicio and fecha_fin) else None,
                 "resumenes_usados": dias_resumen_usados,
             }
-        })
+        }, 200
 
     except Exception as e:
         print(f"❌ Error en /pregunta (LangChain): {e}")
-        return jsonify({"error": str(e)}), 500
+        return {"error": str(e)}, 500
+
+@app.route("/pregunta", methods=["POST"])
+def pregunta():
+    data = request.get_json(silent=True) or {}
+    q = (data.get("pregunta", "") or "").strip()
+    payload, status = responder_pregunta(q)
+    return jsonify(payload), status
 
 
 
