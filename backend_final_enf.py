@@ -2175,6 +2175,89 @@ def pregunta():
     payload, status = responder_pregunta(q)
     return jsonify(payload), status
 
+# =========================
+# 🤖 TELEGRAM WEBHOOK
+# =========================
+
+import requests
+
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN_ENERGY", "").strip()
+TELEGRAM_WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET", "").strip()
+TELEGRAM_PUBLIC_URL = os.getenv("TELEGRAM_PUBLIC_URL", "").strip()
+
+def telegram_api_url(method: str) -> str:
+    return f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/{method}"
+
+def telegram_send_message(chat_id: int, text: str):
+    if not TELEGRAM_BOT_TOKEN:
+        print("⚠️ TELEGRAM_BOT_TOKEN no definido")
+        return
+    payload = {"chat_id": chat_id, "text": text}
+    try:
+        requests.post(telegram_api_url("sendMessage"), json=payload, timeout=20)
+    except Exception as e:
+        print("❌ Error enviando mensaje a Telegram:", e)
+
+def set_telegram_webhook():
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_PUBLIC_URL:
+        print("⚠️ Telegram webhook no configurado (faltan variables)")
+        return
+
+    webhook_url = f"{TELEGRAM_PUBLIC_URL.rstrip('/')}/telegram_webhook"
+    data = {"url": webhook_url}
+
+    if TELEGRAM_WEBHOOK_SECRET:
+        data["secret_token"] = TELEGRAM_WEBHOOK_SECRET
+
+    try:
+        r = requests.post(telegram_api_url("setWebhook"), data=data, timeout=20)
+        print("📡 setWebhook status:", r.status_code, r.text[:300])
+    except Exception as e:
+        print("❌ Error seteando webhook:", e)
+
+@app.route("/telegram_webhook", methods=["POST"])
+def telegram_webhook():
+    if TELEGRAM_WEBHOOK_SECRET:
+        secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
+        if secret != TELEGRAM_WEBHOOK_SECRET:
+            return "forbidden", 403
+
+    update = request.get_json(silent=True) or {}
+    message = update.get("message") or update.get("edited_message")
+    if not message:
+        return "ok", 200
+
+    chat = message.get("chat") or {}
+    chat_id = chat.get("id")
+    text = (message.get("text") or "").strip()
+
+    if not chat_id or not text:
+        return "ok", 200
+
+    if text.lower() in ["/start", "/help"]:
+        telegram_send_message(
+            chat_id,
+            "Hola 👋\n\nPuedes preguntarme cosas como:\n"
+            "- ¿Qué se dijo sobre EnfraGen esta semana?\n"
+            "- Compara la primera semana de diciembre vs la segunda\n"
+            "- ¿Qué pasó entre el 1 y 7 de diciembre?"
+        )
+        return "ok", 200
+
+    telegram_send_message(chat_id, "⏳ Analizando tu pregunta...")
+
+    payload, status = responder_pregunta(text)
+
+    if status != 200 or "respuesta" not in payload:
+        telegram_send_message(chat_id, "⚠️ No pude procesar la pregunta.")
+        return "ok", 200
+
+    telegram_send_message(chat_id, payload["respuesta"][:3500])
+    return "ok", 200
+
+# Auto-configurar webhook en Render
+if TELEGRAM_BOT_TOKEN and TELEGRAM_PUBLIC_URL:
+    set_telegram_webhook()
 
 
 
