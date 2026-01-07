@@ -2152,6 +2152,22 @@ Responde en español, con tono profesional y analítico, claro y directo.
 Usa ÚNICAMENTE la información contenida en los “Resúmenes relevantes” y “Titulares relevantes”.
 Está PROHIBIDO agregar contexto externo o hechos no presentes en esos bloques.
 Si algo no aparece en titulares/resúmenes, dilo explícitamente.
+REGLAS FUNDAMENTALES (PROHIBICIONES ABSOLUTAS)
+- Está TERMINANTEMENTE PROHIBIDO:
+  - Explicar por qué algo es importante, relevante, significativo o preocupante.
+  - Usar frases como:
+    “lo que implica”, “lo que refuerza”, “lo que podría”, “lo que resalta”, “esto es clave”, “esto podría ser”.
+  - Hacer inferencias, conclusiones, evaluaciones o lecturas políticas.
+  - Agregar contexto que NO esté explícitamente contenido en los titulares o que no esté dentro de {CONTEXTO_POLITICO}.
+Reglas adicionales: 
+  - NO expliques consecuencias.
+  - NO relaciones hechos entre sí si los titulares no lo hacen explícitamente.
+  - SÍ puedes agregar frases cortas de contexto SOLO si ese dato está explícitamente en {CONTEXTO_POLITICO} y sirve para entender el titular o desarrollarlo mejor (desambiguar actor, rol institucional, estado de intervención, naturaleza pública/privada, o marco regulatorio inmediato).
+  - Está prohibido usar ese contexto para inferir consecuencias, evaluar, o decir por qué importa.
+
+USO PERMITIDO DEL {CONTEXTO_POLITICO} (SIN BARRERAS, PERO CONTROLADO)
+- Puedes insertar micro-contexto (máx. 1 frase por párrafo) tomado de {CONTEXTO_POLITICO} cuando aporte claridad inmediata.
+- Ese micro-contexto debe escribirse como HECHO, no como interpretación.
 
 Pregunta del usuario:
 {q}
