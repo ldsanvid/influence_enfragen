@@ -2283,6 +2283,7 @@ def telegram_webhook():
             telegram_send_message(
                 chat_id,
                 "Hola 👋\n\nPuedes preguntarme cosas como:\n"
+                "- ¿Qué noticias hubo el 7 de enero?\n"
                 "- ¿Qué se dijo sobre el sector energético esta semana?\n"
                 "- Compara la primera semana de diciembre vs la segunda\n"
                 "- ¿Qué pasó entre el 1 y 7 de diciembre?"
