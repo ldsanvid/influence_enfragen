@@ -577,7 +577,6 @@ NUEVOS DESARROLLOS:
 - Sin embargo, el mismo 8 de enero de 2026, Air-e anunció que la tarifa de energía que cobran se mantendrá estable durante todo el año, con un valor de COP 796 kilovatio hora, una cifra que se ubica COP 80 por debajo del promedio nacional, calculado en COP 876 al cierre de 2025.
 - El 12 de enero de 2026, El ministro de Minas y Energía, Edwin Palma Egea, anunció la revisión integral de los proyectos de regasificación que están actualmente en el radar del país, una decisión que incorpora un nuevo elemento y es la posibilidad de importar gas desde Venezuela.
 - El 12 de enero de 2026, el Consejo Gremial de Bolívar, rechazó a su vez el proyecto de resolución del Ministerio de Minas para imponer un cobro nacional de 8 pesos por kWh que pueda cubrir las deudas de la empresa Air-e y Afinia.    
-- El balance de 2025 de la campaña de financiación ‘Ponte Bacano’, impulsada por la Dirección Comercial de Air-e, como uno de los principales mecanismos para aliviar la carga económica de los hogares y mejorar los índices de recaudo en la región, reporta más de 46.000 acuerdos de pago en los departamentos de Atlántico, Magdalena y La Guajira.
 """
 TERM_INDUSTRIA = {
     "tarifas energéticas",
