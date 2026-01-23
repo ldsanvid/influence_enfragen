@@ -577,6 +577,7 @@ NUEVOS DESARROLLOS:
 - Sin embargo, el mismo 8 de enero de 2026, Air-e anunció que la tarifa de energía que cobran se mantendrá estable durante todo el año, con un valor de COP 796 kilovatio hora, una cifra que se ubica COP 80 por debajo del promedio nacional, calculado en COP 876 al cierre de 2025.
 - El 12 de enero de 2026, El ministro de Minas y Energía, Edwin Palma Egea, anunció la revisión integral de los proyectos de regasificación que están actualmente en el radar del país, una decisión que incorpora un nuevo elemento y es la posibilidad de importar gas desde Venezuela.
 - El 12 de enero de 2026, el Consejo Gremial de Bolívar, rechazó a su vez el proyecto de resolución del Ministerio de Minas para imponer un cobro nacional de 8 pesos por kWh que pueda cubrir las deudas de la empresa Air-e y Afinia.    
+- El 23 de enero de 2026, El Ministerio de Minas y Energía expidió el decreto 0044 por medio del cual se introducen nuevos tributos a la generación de energía eléctrica en Colombia...se crea una contribución parafiscal para el fortalecimiento del Fondo Empresarial de la Superintendencia de Servicios Públicos Domiciliarios, orientada a financiar actuaciones necesarias para garantizar la continuidad, calidad, cobertura y sostenibilidad de la prestación del servicio público domiciliario de energía eléctrica. De acuerdo con lo expedido, la contribución será del 2,5% sobre la base gravable. 
 """
 TERM_INDUSTRIA = {
     "tarifas energéticas",
